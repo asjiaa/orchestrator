@@ -52,33 +52,27 @@ func (w *Worker) Run(ctx context.Context) {
 	slog.InfoContext(ctx, "worker started")
 
 	for {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			slog.InfoContext(ctx, "worker stopping")
 			return
-		default:
 		}
 
 		job, err := w.queue.Dequeue(ctx)
 		if errors.Is(err, queue.ErrEmptyQueue) {
-			select {
-			case <-ctx.Done():
-				slog.InfoContext(ctx, "worker stopping")
-				return
-			case <-time.After(pollInterval):
-				continue
-			}
+			continue // re-block via loop if no jobs available
 		}
 		if err != nil {
-			slog.ErrorContext(ctx, "dequeue error",
-				"error", err,
-			)
+			if ctx.Err() != nil {
+				slog.InfoContext(ctx, "worker stopping")
+				return
+			}
+			slog.ErrorContext(ctx, "dequeue error", "error", err)
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(pollInterval):
-				continue
+			case <-time.After(time.Second): // handle cache error
 			}
+			continue
 		}
 
 		w.process(ctx, job)

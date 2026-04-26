@@ -24,10 +24,24 @@ type Dispatcher struct {
 	store store.Store
 	queue queue.Queue
 	cc    *queue.ConcurrencyChecker
+	wake  chan struct{}
 }
 
 func NewDispatcher(s store.Store, q queue.Queue, cc *queue.ConcurrencyChecker) *Dispatcher {
-	return &Dispatcher{store: s, queue: q, cc: cc}
+	return &Dispatcher{
+		store: s,
+		queue: q,
+		cc:    cc,
+		wake:  make(chan struct{}, 1), // add buffer for burst control
+	}
+}
+
+// Signal direct tick run
+func (d *Dispatcher) Wake() {
+	select {
+	case d.wake <- struct{}{}:
+	default:
+	}
 }
 
 func (d *Dispatcher) Run(ctx context.Context) {
@@ -53,10 +67,13 @@ func (d *Dispatcher) Run(ctx context.Context) {
 			fresh, err := d.loadTenants(ctx)
 			if err != nil {
 				slog.ErrorContext(ctx, "dispatcher: tenant refresh failed", "error", err)
-				continue // continue through stale state
+				continue
 			}
 			states = d.mergeStates(states, fresh)
 			slog.InfoContext(ctx, "dispatcher: tenants refreshed", "count", len(states))
+
+		case <-d.wake:
+			d.tick(ctx, states)
 
 		case <-tickTimer.C:
 			d.tick(ctx, states)

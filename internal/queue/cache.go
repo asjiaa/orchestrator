@@ -16,7 +16,7 @@ var reaperScript string
 
 const (
 	visibilityTTL  = 60 * time.Second // job completion time limit
-	dequeueTimeout = 0                // avoid dequeue block process
+	dequeueTimeout = 5 * time.Second  // handle blocking via window on element move
 )
 
 // Queue implementation via Redis
@@ -49,14 +49,15 @@ func (q *RedisQueue) Enqueue(ctx context.Context, job Job) error {
 }
 
 func (q *RedisQueue) Dequeue(ctx context.Context) (*Job, error) {
-	data, err := q.client.LMove(ctx,
+	data, err := q.client.BLMove(ctx,
 		keyDispatchReady,
 		keyInflight,
 		"LEFT", "RIGHT",
+		dequeueTimeout,
 	).Bytes()
 
 	if errors.Is(err, redis.Nil) {
-		return nil, ErrEmptyQueue
+		return nil, ErrEmptyQueue // handle timeout on empty queue
 	}
 	if err != nil {
 		return nil, fmt.Errorf("queue: dequeue: %w", err)
