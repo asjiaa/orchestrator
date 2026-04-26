@@ -119,11 +119,11 @@ export const options = {
 
     job_accepted: ["rate>0.8"],
 
-    job_end_to_end_load_ms: ["p(95)<400"],
-    queue_latency_load_ms: ["p(95)<350"],
+    job_end_to_end_load_ms: ["p(95)<150"],
+    queue_latency_load_ms: ["p(95)<100"],
 
-    job_end_to_end_fairness_ms: ["p(95)<375"],
-    queue_latency_fairness_ms: ["p(95)<325"],
+    job_end_to_end_fairness_ms: ["p(95)<100"],
+    queue_latency_fairness_ms: ["p(95)<75"],
 
     fairness_free_ratio: ["rate>=0.25"],
 
