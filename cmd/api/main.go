@@ -28,6 +28,8 @@ func main() {
 	}
 
 	cc := iqueue.NewConcurrencyChecker(redisClient)
+	idem := iqueue.NewIdempotencyStore(redisClient)
+	rl := iqueue.NewRateLimiter(redisClient)
 
 	q := iqueue.NewRedisQueue(redisClient, cc)
 
@@ -51,11 +53,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	idem := iqueue.NewIdempotencyStore(redisClient)
-
 	h := api.NewHandler(q, s, storageClient, idem)
-
-	rl := iqueue.NewRateLimiter(redisClient)
 
 	router := api.NewRouter(h, s, rl)
 
