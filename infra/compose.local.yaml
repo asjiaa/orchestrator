@@ -85,6 +85,8 @@ services:
     build:
       context: ..
       dockerfile: ./infra/worker/Dockerfile
+    ports:
+      - "6060"
     environment:
       REDIS_URL: redis://cache:6379/0
       S3_ENDPOINT: http://minio:9000

@@ -89,6 +89,8 @@ services:
     build:
       context: ..
       dockerfile: infra/worker/Dockerfile
+    ports:
+      - "6060"
     environment:
       REDIS_URL: ${REDIS_URL}
       S3_BUCKET: ${S3_BUCKET}

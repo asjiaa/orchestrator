@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strconv"
@@ -67,6 +69,12 @@ func main() {
 	n := workerConcurrency()
 	workerID := buildWorkerID()
 	slog.Info("starting workers", "count", n)
+
+	go func() {
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			slog.Error("pprof server failed", "error", err)
+		}
+	}()
 
 	cc := iqueue.NewConcurrencyChecker(redisClient)
 	q := iqueue.NewRedisQueue(redisClient, cc)
