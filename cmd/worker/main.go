@@ -81,9 +81,10 @@ func main() {
 	}()
 
 	cc := iqueue.NewConcurrencyChecker(redisClient)
-	q := iqueue.NewRedisQueue(redisClient, cc)
-	d := worker.NewDispatcher(s, q, cc)
 
+	q := iqueue.NewRedisQueue(redisClient, cc)
+
+	d := worker.NewDispatcher(s, q, cc)
 	go d.Run(ctx)
 
 	r := worker.NewReaper(s, q)
