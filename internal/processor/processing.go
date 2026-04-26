@@ -15,9 +15,11 @@ const (
 	exportQuality   = 85
 )
 
-type govipsProcessor struct{}
+type govipsProcessor struct {
+	sem chan struct{} // buffered channel to limit processing work
+}
 
-func NewGovipsProcessor() (*govipsProcessor, error) {
+func NewGovipsProcessor(maxConcurrent int) (*govipsProcessor, error) {
 	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: 1, // scale via environment variable
@@ -28,7 +30,13 @@ func NewGovipsProcessor() (*govipsProcessor, error) {
 		CacheTrace:       false,
 		CollectStats:     false,
 	})
-	return &govipsProcessor{}, nil
+
+	sem := make(chan struct{}, maxConcurrent)
+	for range maxConcurrent {
+		sem <- struct{}{}
+	}
+
+	return &govipsProcessor{sem: sem}, nil
 }
 
 func (g *govipsProcessor) Shutdown() {
@@ -36,6 +44,14 @@ func (g *govipsProcessor) Shutdown() {
 }
 
 func (g *govipsProcessor) Process(ctx context.Context, jobID string, input io.Reader) (Result, error) {
+	// Block scheduler if no token available via acquire
+	select {
+	case <-g.sem:
+	case <-ctx.Done():
+		return Result{}, fmt.Errorf("govips: acquire semaphore: %w", ctx.Err())
+	}
+	defer func() { g.sem <- struct{}{} }()
+
 	raw, err := io.ReadAll(input)
 	if err != nil {
 		return Result{}, fmt.Errorf("govips: read input: %w", err)

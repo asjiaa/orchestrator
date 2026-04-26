@@ -97,6 +97,7 @@ services:
       AWS_REGION: ${AWS_REGION}
       DATABASE_URL: ${DATABASE_URL}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY}
+      VIPS_WORKERS: "1"
     depends_on:
       cache:
         condition: service_healthy

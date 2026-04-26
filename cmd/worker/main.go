@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -59,7 +60,10 @@ func main() {
 	}
 	defer s.Close()
 
-	p, err := processor.NewGovipsProcessor()
+	vipsWorkers := vipsWorkerCount()
+	slog.Info("starting vips processor", "max_concurrent", vipsWorkers)
+	p, err := processor.NewGovipsProcessor(vipsWorkers)
+
 	if err != nil {
 		slog.Error("initialise govips processor", "error", err)
 		os.Exit(1)
@@ -123,6 +127,17 @@ func workerConcurrency() int {
 		return 2
 	}
 	return n
+}
+
+func vipsWorkerCount() int {
+	if v := os.Getenv("VIPS_WORKERS"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err == nil && n > 0 {
+			return n
+		}
+		slog.Warn("invalid VIPS_WORKERS, falling back to GOMAXPROCS", "value", v)
+	}
+	return runtime.GOMAXPROCS(0)
 }
 
 func mustEnv(key string) string {
