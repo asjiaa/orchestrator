@@ -65,7 +65,7 @@ flowchart LR
     M2 --> H[CreateJob handler]
     H --> DB1[(PostgreSQL jobs: pending)]
     H --> S3[(MinIO/AWS S3: input object)]
-    H --> TL[[Redis tenant lane<br/>queue:tenant:{tenant_id}]]
+    H --> TL[["Redis tenant lane\nqueue:tenant:{tenant_id}"]]
     TL --> R[202 Accepted + job_id]
 ```
 
