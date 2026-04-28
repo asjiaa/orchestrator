@@ -12,6 +12,8 @@ Orchestrator adopts [fault-tolerance](https://kafka.apache.org/24/streams/archit
 
 ## Architecture
 
+The below outlines Orchestrator's system architecture. Refer to this [diagram](https://github.com/user-attachments/assets/2e827a0f-1507-43d7-955d-ab3311934305) for a more holistic overview.
+
 ### Interfaces
 
 Orchestrator keeps application boundaries explicit through three interfaces:
@@ -69,11 +71,11 @@ flowchart LR
     TL --> R[202 Accepted + job_id]
 ```
 
-Design choices:
-- **Middleware before writes**: auth + rate checks happen before DB/object/queue mutation, reducing bad writes under abusive traffic.
-- **Database-first insertion**: job row is written before queue insertion so every queued payload has canonical metadata.
-- **Tenant lane enqueue**: API does not enqueue directly into the global ready queue, instead it writes to per-tenant lanes to preserve fairness at dispatch time.
-- **Idempotency support**: `X-Idempotency-Key` claims duplicates early and returns existing `job_id` to avoid duplicate work.
+The below are some notes on design nuances regarding the request path.
+- Auth + rate **middleware** checks occur before any **storage mutation**, as our workflow is tenant-based, this reduces bad writes under abusive traffic.
+- To ensure every queued payload has canonical metadata, **database-first insertion** is leveraged, job row is written before queue insertion.
+- API does not enqueue directly enqueue to a global ready queue, instead performs a **tenant lane enqueue** to preserve fairness at dispatch time.
+- **Idempotency support** is exercised via `X-Idempotency-Key` reference, which claims duplicates early and returns existing `job_id` to avoid duplicate work.
 
 ### Dispatch Process
 
@@ -114,11 +116,11 @@ sequenceDiagram
     Note over D: deficit replenished by dispatch_weight
 ```
 
-Design choices:
-- **Two-stage queueing**: tenant lane -> dispatch queue separates fairness policy from worker consumption.
-- **Weighted fairness**: dispatcher uses per-tenant `dispatch_weight` as DRR credit, enabling plan-tier priority without starvation.
-- **Concurrency guard at dispatch**: workers remain simple while per-tenant concurrency is enforced before entering ready queue.
-- **At-least-once processing**: `BLMOVE` to inflight + `Ack/Nack` supports retry and crash recovery semantics.
+The below are some notes on design nuances regarding the dispatch workflow implementation.
+- **Two-stage queueing** from tenant lane → dispatch queue separates fairness policy from worker consumption.
+- Dispatcher uses per-tenant `dispatch_weight` as DRR credit to enforce **weighted fairness**, enabling plan-tier priority without starvation.
+- Workers remain simple while per-tenant concurrency acts as a **guard at dispatch** that is enforced before entering ready queue.
+- `BLMOVE` to inflight + `Ack/Nack` supports retry and crash recovery semantics, ensuring **at-least-once processing** for orphaned jobs.
 
 ### Storage Responsibilities
 
@@ -143,9 +145,9 @@ Responsibility split:
 - **MinIO/AWS S3 (payload state)**: immutable input objects and generated output objects (`input_key`, `result_key`).
 
 Write ordering and reconciliation strategy:
-- **Create path**: DB row (`pending`) -> object upload -> tenant-lane enqueue. Queue payload references an existing job ID rather than being the primary record.
-- **Success path**: upload result object -> write `result_key` in DB -> mark `complete` -> `Ack` queue entry.
-- **Failure path**: `FailJob` increments attempts and flips status (`pending` or `dead`) -> `Nack`/`Ack` queue accordingly.
+- **Create path**: DB row (`pending`) → object upload → tenant-lane enqueue. Queue payload references an existing job ID rather than being the primary record.
+- **Success path**: upload result object → write `result_key` in DB → mark `complete` → `Ack` queue entry.
+- **Failure path**: `FailJob` increments attempts and flips status (`pending` or `dead`) → `Nack`/`Ack` queue accordingly.
 - **Crash/stall recovery**: reaper scans stale `processing` rows from DB, requeues in Redis, then writes `pending` in DB for reconciliation.
 
 ## Features
@@ -315,8 +317,8 @@ Metrics with thresholds are used to verify:
 - `pro_rate_limited`: pro traffic should also pass steady-state load without unintended rate limiting.
 - `free_burst_rate_limited`: free-tier burst traffic should be rate-limited, confirming tenant plan enforcement.
 - `job_accepted`: a healthy portion of submissions should still be admitted under stress, indicating service remains usable.
-- `job_end_to_end_load_ms`: total completion latency (submit -> terminal status) under mixed throughput load.
-- `queue_latency_load_ms`: queue waiting time (`created_at -> processing_started_at`) under mixed throughput load.
+- `job_end_to_end_load_ms`: total completion latency (submit → terminal status) under mixed throughput load.
+- `queue_latency_load_ms`: queue waiting time (`created_at → processing_started_at`) under mixed throughput load.
 - `job_end_to_end_fairness_ms`: completion latency under fairness-focused contention scenarios.
 - `queue_latency_fairness_ms`: queue wait under fairness contention, used to detect starvation or scheduler imbalance.
 - `fairness_free_ratio`: checks that free-tier jobs still complete at a minimum share during concurrent higher-tier traffic.
