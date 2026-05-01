@@ -293,7 +293,7 @@ Additional variables used by infrastructure services in `compose.prod`:
 
 #### 3) Recommended worker constants
 
-`compose.prod` pins `VIPS_WORKERS: "1"` to avoid libvips CPU oversubscription per container and exposes `WORKER_CONCURRENCY` for queue parallelism. Recommended starting points:
+`compose.prod` exposes `WORKER_CONCURRENCY` for queue parallelism and `VIPS_WORKERS` to avoid CPU oversubscription per container. `VIPS_WORKERS` falls back to `GOMAXPROCS` for libvips and can oversubscribe CPU with several concurrent job goroutines. Recommended starting points:
 
 - **2 vCPU worker host**: `WORKER_CONCURRENCY=2`, `VIPS_WORKERS=1`
 - **4 vCPU worker host**: `WORKER_CONCURRENCY=4`, `VIPS_WORKERS=1`
