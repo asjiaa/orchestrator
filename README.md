@@ -156,19 +156,19 @@ Write ordering and reconciliation strategy:
 
 Jobs are durably retried after transient failures or worker interruption. Duplicates are possible and handled at the application boundary.
 
-See **Dispatch Process** and **Storage Responsibilities** for dequeue/inflight/ack-nack and reaper reconciliation details.
+See [**Dispatch Process**](https://github.com/asjiaa/orchestrator#dispatch-process) and [**Storage Responsibilities**](https://github.com/asjiaa/orchestrator#storage-responsibilities) for dequeue/inflight/ack-nack and reaper reconciliation details.
 
 ### Fair Multi-tenant scheduling
 
 Each tenant continuously makes progress under load, while plan tiers receive proportionally higher dispatch share.
 
-See **Request Path** and **Dispatch Process** for per-tenant laneing and DRR-weighted dispatch behavior.
+See [**Request Path**](https://github.com/asjiaa/orchestrator#request-path) and [**Dispatch Process**](https://github.com/asjiaa/orchestrator#dispatch-process) for per-tenant laneing and DRR-weighted dispatch behavior.
 
 ### Graceful Failure Handling
 
 Failures are bounded by explicit retry limits, transition into observable terminal states, and remain operator-recoverable.
 
-See **Storage Responsibilities** for fail transitions, retry limits, and crash recovery write ordering.
+See [**Storage Responsibilities**](https://github.com/asjiaa/orchestrator#storage-responsibilities) for fail transitions, retry limits, and crash recovery write ordering.
 
 ## Usage
 
@@ -246,7 +246,7 @@ When complete, response includes a presigned `result_url`.
 
 ### Deployment
 
-Production compose is defined in `infra/compose.prod.yaml` and expects runtime values from environment variables (typically a `.env` file in deployment).
+Production compose is defined in [`infra/compose.prod.yaml`](https://github.com/asjiaa/orchestrator/blob/main/infra/compose.prod.yaml) and expects runtime values from environment variables (typically a `.env` file in deployment).
 
 #### 1) AWS console-side setup
 
@@ -309,7 +309,7 @@ docker compose -f infra/compose.prod.yaml --env-file .env up --build -d
 
 ## Benchmarks
 
-`scripts/load.js` validates both performance and queue semantics under mixed tenant traffic, fairness contention, and failure recovery.
+[`scripts/load.js`](https://github.com/asjiaa/orchestrator/blob/main/scripts/load.js) validates both performance and queue semantics under mixed tenant traffic, fairness contention, and failure recovery.
 
 Metrics with thresholds are used to verify:
 
