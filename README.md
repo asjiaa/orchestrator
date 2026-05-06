@@ -309,9 +309,26 @@ docker compose -f infra/compose.prod.yaml --env-file .env up --build -d
 
 ## Benchmarks
 
-[`scripts/load.js`](https://github.com/asjiaa/orchestrator/blob/main/scripts/load.js) validates both performance and queue semantics under mixed tenant traffic, fairness contention, and failure recovery.
+This [load test script](https://gist.github.com/asjiaa/a10738c2937d144b35cc1f1733115094) validates both performance and queue semantics under mixed tenant traffic, fairness contention, and failure recovery. Note  worker failure was simulated via an [automated shell script](https://gist.github.com/asjiaa/0ef2ccb4446cd9467df9b420cd000c8b).
 
-Metrics with thresholds are used to verify:
+Load testing via the above methodology derived the following performance thresholds.
+
+```js
+thresholds: {
+  enterprise_rate_limited: ["count==0"],
+  pro_rate_limited: ["count==0"],
+  free_burst_rate_limited: ["count>0"],
+  job_accepted: ["rate>0.8"],
+  job_end_to_end_load_ms: ["p(95)<150"],
+  queue_latency_load_ms: ["p(95)<100"],
+  job_end_to_end_fairness_ms: ["p(95)<100"],
+  queue_latency_fairness_ms: ["p(95)<75"],
+  fairness_free_ratio: ["rate>=0.25"],
+  recovery_job_accepted: ["rate==1"],
+},
+```
+
+Reference the below for what each metric is intended to verify.
 
 - `enterprise_rate_limited`: enterprise traffic should not be unexpectedly throttled during normal load profile.
 - `pro_rate_limited`: pro traffic should also pass steady-state load without unintended rate limiting.
@@ -323,13 +340,3 @@ Metrics with thresholds are used to verify:
 - `queue_latency_fairness_ms`: queue wait under fairness contention, used to detect starvation or scheduler imbalance.
 - `fairness_free_ratio`: checks that free-tier jobs still complete at a minimum share during concurrent higher-tier traffic.
 - `recovery_job_accepted`: verifies API admission remains healthy during recovery-phase scenarios (including worker interruption tests).
-
-### How to run
-
-```bash
-# Baseline benchmark profile (all scenarios/thresholds from scripts/load.js)
-k6 run scripts/load.js
-
-# Recovery benchmark wrapper (includes worker SIGKILL fault injection)
-./scripts/load.sh baseline
-```
