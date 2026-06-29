@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Engine%20%2B%20Compose%20v2-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Object Storage](https://img.shields.io/badge/Object%20Storage-MinIO%20(latest)%20%7C%20AWS%20S3-3ECF8E?logo=minio&logoColor=white)](https://min.io/)
 
-Orchestrator is a self-hosted job processing service for image workloads, focused on **reliability** and **performance** under [high throughput](./scripts/load.js).
+Orchestrator is a self-hosted job processing service for image workloads, focused on **reliability** and **performance** under [high throughput](https://gist.github.com/asjiaa/a10738c2937d144b35cc1f1733115094).
 
 Orchestrator adopts [fault-tolerance](https://kafka.apache.org/24/streams/architecture/#local-state-stores) for **at-least-once delivery** and [multi-tenancy](https://pulsar.apache.org/docs/next/concepts-multi-tenancy/) support for **fair scheduling**, as **production queue semantics** inspired by open-source distributed event streamers like [Apache Kafka](https://kafka.apache.org/) and [Apache Pulsar](https://pulsar.apache.org/).
 
